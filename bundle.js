@@ -88,6 +88,7 @@ var Board = function () {
     this.board = {};
     this.playerTurn = "human";
     this.marks = { "human": "X", "computer": "O" };
+    this.fetchingMove = false;
     this.resetBoard();
   }
 
@@ -102,9 +103,14 @@ var Board = function () {
       return this.board[i];
     }
   }, {
+    key: "getPlayerTurn",
+    value: function getPlayerTurn() {
+      return this.playerTurn;
+    }
+  }, {
     key: "resetBoard",
     value: function resetBoard() {
-      for (var i = 0; i < 8; i++) {
+      for (var i = 0; i < 9; i++) {
         this.board[i] = " ";
       }
 
@@ -113,25 +119,46 @@ var Board = function () {
       }
     }
   }, {
+    key: "getWinner",
+    value: function getWinner() {
+      if (this.checkForWinner("human")) {
+        return "human";
+      } else if (this.checkForWinner("computer")) {
+        return "computer";
+      } else {
+        return false;
+      }
+    }
+  }, {
     key: "checkForWinner",
     value: function checkForWinner(player) {
-      if (this.checkRows(player) || this.checkColumns(player) || this.checkDiagonals(player)) {
-        // $.ajax({
-        //   url: "https://gnswrchqte.executeapi.uswest2.amazonaws.com/prod/putboard",
-        //   type: "PUT",
-        //   data: this.board,
-        //   success: (data) => {
-        //     this.resetBoard();
-        //   }
-        // })
-      };
+      return this.checkRows(player) || this.checkColumns(player) || this.checkDiagonals(player);
+    }
+  }, {
+    key: "sendResults",
+    value: function sendResults() {
+      var data = { "final_board": {} };
+
+      for (var i = 0; i < 9; i++) {
+        data["final_board"] = { i: this.board[i] };
+      }
+
+      var jsonData = JSON.stringify(data);
+      $.ajax({
+        url: "https://gnswrchqte.execute-api.us-west-2.amazonaws.com/prod/putboard",
+        type: "PUT",
+        data: jsonData,
+        success: function success(data) {
+          console.log(data);
+        }
+      });
     }
   }, {
     key: "checkRows",
     value: function checkRows(player) {
       for (var i = 0; i < 3; i++) {
         var startIdx = 3 * i;
-        if (this.board[startIdx] === player && this.board[startIdx] === this.board[startIdx + 1] && this.board[startIdx + 1] === this.board[startIdx + 2]) {
+        if (this.board[startIdx] === this.marks[player] && this.board[startIdx] === this.board[startIdx + 1] && this.board[startIdx + 1] === this.board[startIdx + 2]) {
           return true;
         }
       }
@@ -142,7 +169,7 @@ var Board = function () {
     key: "checkColumns",
     value: function checkColumns(player) {
       for (var i = 0; i < 3; i++) {
-        if (this.board[i] === player && this.board[i] === this.board[i + 3] && this.board[i + 3] === this.board[i + 6]) {
+        if (this.board[i] === this.marks[player] && this.board[i] === this.board[i + 3] && this.board[i + 3] === this.board[i + 6]) {
           return true;
         }
       }
@@ -152,11 +179,11 @@ var Board = function () {
   }, {
     key: "checkDiagonals",
     value: function checkDiagonals(player) {
-      if (this.board[0] === player && this.board[0] === this.board[4] && this.board[4] === this.board[8]) {
+      if (this.board[0] === this.marks[player] && this.board[0] === this.board[4] && this.board[4] === this.board[8]) {
         return true;
       }
 
-      if (this.board[2] === player && this.board[2] === this.board[4] && this.board[4] === this.board[6]) {
+      if (this.board[2] === this.marks[player] && this.board[2] === this.board[4] && this.board[4] === this.board[6]) {
         return true;
       }
 
@@ -166,8 +193,8 @@ var Board = function () {
     key: "tryMove",
     value: function tryMove(squareNum, player) {
       if (this.board[squareNum] === " " && this.playerTurn === player) {
-        this.board[squareNum] === this.marks[player];
-        this.view.update();
+        this.board[squareNum] = this.marks[player];
+        this.playerTurn = this.playerTurn === "human" ? "computer" : "human";
         return true;
       } else {
         return false;
@@ -176,35 +203,18 @@ var Board = function () {
   }, {
     key: "getComputerMove",
     value: function getComputerMove() {
-      // NB: leaving this code commented out.  The request URL times out consistently.
+      var that = this;
+      this.fetchingMove = true;
 
-      // $.ajax({
-      //   url: "https://zpj6onnvm5.executeapi.uswest2.amazonaws.com/prod/getmove",
-      //   type: "GET",
-      //   success: (data) => {
-      //     var moveSuccess = this.tryMove(data[move_position], "computer");
-      //     if (!moveSuccess) {
-      //       this.getComputerMove();
-      //     }
-      //   }
-      // });
-
-      // NB: Here's a workaround that mimics the AJAX request/response
-      var validMoves = [];
-
-      for (var i = 0; i < 8; i++) {
-        if (this.board[i] === " ") {
-          validMoves.push(i);
+      $.ajax({
+        url: "https://zpj6onnvm5.execute-api.us-west-2.amazonaws.com/prod/getmove",
+        type: "GET",
+        success: function success(data) {
+          that.fetchingMove = false;
+          var jsonData = JSON.parse(data);
+          that.tryMove(jsonData["move_position"], "computer");
         }
-      }
-
-      var idx = Math.floor(Math.random() * validMoves.length);
-      var response = { "move_position": idx };
-
-      var moveSuccess = this.tryMove(response["move_position"], "computer");
-      if (!moveSuccess) {
-        this.getComputerMove();
-      }
+      });
     }
   }]);
 
@@ -237,8 +247,8 @@ var GameView = function () {
     this.board = board;
     this.boardElement = document.getElementById("board");
     this.squares = [];
-    this.board.setView(this);
     this.setupBoard();
+    this.start();
   }
 
   _createClass(GameView, [{
@@ -248,16 +258,16 @@ var GameView = function () {
         var row = document.createElement("ul");
         row.className = "row";
 
-        this.squares[i] = [];
         for (var j = 0; j < 3; j++) {
           var square = document.createElement("li");
           square.textContent = this.board.getSquare(i);
           square.className = "square";
+          square.id = 3 * i + j;
 
           square.addEventListener("click", this.handleClick.bind(this));
 
           row.append(square);
-          this.squares[i][j] = square;
+          this.squares[3 * i + j] = square;
         }
 
         this.boardElement.append(row);
@@ -266,30 +276,38 @@ var GameView = function () {
   }, {
     key: "handleClick",
     value: function handleClick(e) {
-      if (board.playerTurn === "human") {
-        var coords = [0, 0];
-        var attempt = this.board.tryMove(coords, "human");
-        if (!attempt) {
-          alert("Uh oh! Not a valid move.");
-        } else {
-          this.board.playerTurn = "computer";
-        }
+      e.preventDefault();
+
+      if (this.board.getPlayerTurn() === "human") {
+        var squareNum = parseInt(e.target.id);
+        this.board.tryMove(squareNum, "human");
       }
     }
   }, {
     key: "start",
     value: function start() {
-      while (!this.board.checkForWinner("human") && !this.board.checkForWinner("computer")) {
-        if (this.board.playerTurn === "computer") {
-          this.board.getComputerMove();
-          this.board.playerTurn = "human";
+      var that = this;
+
+      var interval = setInterval(function () {
+        if (!that.board.getWinner()) {
+          if (that.board.playerTurn === "computer" && !that.board.fetchingMove) {
+            that.board.getComputerMove();
+          }
+
+          that.update();
+        } else {
+          var message = that.board.getWinner() === "human" ? "You've won!" : "Game over :(";
+          //alert(message);
+          that.update();
+          that.board.sendResults();
+          clearInterval(interval);
         }
-      }
+      }, 50);
     }
   }, {
     key: "update",
     value: function update() {
-      for (var i = 0; i < 8; i++) {
+      for (var i = 0; i < 9; i++) {
         this.squares[i].textContent = this.board.getSquare(i);
       }
     }
@@ -320,11 +338,8 @@ var _gameView2 = _interopRequireDefault(_gameView);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log("read");
-  // let board = new Board();
-  // let view = new GameView(board);
-  // // view.setupBoard();
-  // // view.start();
+  var board = new _board2.default();
+  var view = new _gameView2.default(board);
 });
 
 /***/ })

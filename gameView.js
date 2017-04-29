@@ -3,25 +3,25 @@ class GameView {
     this.board = board;
     this.boardElement = document.getElementById("board");
     this.squares = [];
-    this.board.setView(this);
     this.setupBoard();
+    this.start();
   };
 
   setupBoard () {
-    for (var i=0; i<3; i++) {
-      var row = document.createElement("ul");
+    for (let i=0; i<3; i++) {
+      let row = document.createElement("ul");
       row.className = "row";
 
-      this.squares[i] = [];
-      for (var j=0; j<3; j++) {
-        var square = document.createElement("li");
+      for (let j=0; j<3; j++) {
+        let square = document.createElement("li");
         square.textContent = this.board.getSquare(i);
         square.className = "square";
+        square.id = 3*i+j;
 
         square.addEventListener("click", this.handleClick.bind(this));
 
         row.append(square);
-        this.squares[i][j] = square;
+        this.squares[3*i+j] = square;
       }
 
       this.boardElement.append(row);
@@ -29,28 +29,36 @@ class GameView {
   };
 
   handleClick (e) {
-    if (board.playerTurn === "human") {
-      var coords = [0, 0];
-      var attempt = this.board.tryMove(coords, "human");
-      if (!attempt) {
-        alert("Uh oh! Not a valid move.");
-      } else {
-        this.board.playerTurn = "computer";
-      }
+    e.preventDefault();
+
+    if (this.board.getPlayerTurn() === "human") {
+      let squareNum = parseInt(e.target.id);
+      this.board.tryMove(squareNum, "human");
     }
   };
 
   start () {
-    while (!this.board.checkForWinner("human") && !this.board.checkForWinner("computer")) {
-      if (this.board.playerTurn === "computer") {
-        this.board.getComputerMove();
-        this.board.playerTurn = "human";
+    let that = this;
+
+    let interval = setInterval(() => {
+      if (!that.board.getWinner()) {
+        if (that.board.playerTurn === "computer" && !that.board.fetchingMove) {
+          that.board.getComputerMove();
+        }
+
+        that.update();
+      } else {
+        let message = that.board.getWinner() === "human" ? "You've won!" : "Game over :(";
+        //alert(message);
+        that.update();
+        that.board.sendResults();
+        clearInterval(interval);
       }
-    }
+    }, 50);
   };
 
   update () {
-    for (var i=0; i<8; i++) {
+    for (let i=0; i<9; i++) {
       this.squares[i].textContent = this.board.getSquare(i);
     }
   };
