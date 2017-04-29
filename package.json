@@ -5,8 +5,7 @@
   "main": "entry.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "webpack": "webpack",
-    "deploy": "gh-pages -d build"
+    "webpack": "webpack"
   },
   "author": "",
   "license": "ISC"

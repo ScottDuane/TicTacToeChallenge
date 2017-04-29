@@ -4,6 +4,7 @@ class GameView {
     this.boardElement = document.getElementById("board");
     this.squares = [];
     this.board.setView(this);
+    this.setupBoard();
   };
 
   setupBoard () {

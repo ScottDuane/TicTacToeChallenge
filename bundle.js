@@ -238,6 +238,7 @@ var GameView = function () {
     this.boardElement = document.getElementById("board");
     this.squares = [];
     this.board.setView(this);
+    this.setupBoard();
   }
 
   _createClass(GameView, [{
@@ -322,8 +323,8 @@ document.addEventListener('DOMContentLoaded', function () {
   console.log("read");
   // let board = new Board();
   // let view = new GameView(board);
-  // view.setupBoard();
-  // view.start();
+  // // view.setupBoard();
+  // // view.start();
 });
 
 /***/ })
