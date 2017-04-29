@@ -30,7 +30,16 @@ class Board {
   };
 
   getWinner () {
-    if (this.checkForWinner("human")) {
+    let boardFull = true;
+    for (let i=0; i<9; i++) {
+      if (this.board[i] === " ") {
+        boardFull = false;
+      }
+    }
+
+    if (boardFull) {
+      return "draw";
+    } else if (this.checkForWinner("human")) {
       return "human";
     } else if (this.checkForWinner("computer")) {
       return "computer";

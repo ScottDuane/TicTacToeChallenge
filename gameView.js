@@ -48,9 +48,26 @@ class GameView {
 
         that.update();
       } else {
-        let message = that.board.getWinner() === "human" ? "You've won!" : "Game over :(";
-        //alert(message);
+        let message = "";
+        switch (that.board.getWinner()){
+          case "draw":
+            message = "Draw!";
+            break;
+          case "human":
+            message = "You've won!";
+            break;
+          case "computer":
+            message = "Game over :(";
+            break;
+        }
+        
         that.update();
+
+        let resultMessage = document.createElement("div");
+        resultMessage.textContent = message;
+        resultMessage.className = 'result-message';
+        document.body.append(resultMessage);
+
         that.board.sendResults();
         clearInterval(interval);
       }

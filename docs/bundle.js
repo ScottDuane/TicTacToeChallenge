@@ -121,7 +121,16 @@ var Board = function () {
   }, {
     key: "getWinner",
     value: function getWinner() {
-      if (this.checkForWinner("human")) {
+      var boardFull = true;
+      for (var i = 0; i < 9; i++) {
+        if (this.board[i] === " ") {
+          boardFull = false;
+        }
+      }
+
+      if (boardFull) {
+        return "draw";
+      } else if (this.checkForWinner("human")) {
         return "human";
       } else if (this.checkForWinner("computer")) {
         return "computer";
@@ -296,9 +305,26 @@ var GameView = function () {
 
           that.update();
         } else {
-          var message = that.board.getWinner() === "human" ? "You've won!" : "Game over :(";
-          //alert(message);
+          var message = "";
+          switch (that.board.getWinner()) {
+            case "draw":
+              message = "Draw!";
+              break;
+            case "human":
+              message = "You've won!";
+              break;
+            case "computer":
+              message = "Game over :(";
+              break;
+          }
+
           that.update();
+
+          var resultMessage = document.createElement("div");
+          resultMessage.textContent = message;
+          resultMessage.className = 'result-message';
+          document.body.append(resultMessage);
+
           that.board.sendResults();
           clearInterval(interval);
         }
